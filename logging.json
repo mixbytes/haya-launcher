@@ -22,7 +22,7 @@
  ],
  "loggers": [{
      "name": "default",
-     "level": "debug",
+     "level": "info",
      "enabled": true,
      "additivity": false,
      "appenders": [
