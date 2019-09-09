@@ -157,6 +157,7 @@ def allocateFunds(b, e):
         funds = round(factor * dist[i - b] * 10000)
         if i >= firstProducer and i < firstProducer + numProducers:
             funds = max(funds, round(args.min_producer_funds * 10000))
+        funds = 7_000_000 * 10000
         total += funds
         accounts[i]['funds'] = funds
     return total
@@ -177,12 +178,13 @@ def createStakedAccounts(b, e):
         minStake = min(funds - ramFunds, configuredMinStake)
         unstaked = min(funds - ramFunds - minStake, maxUnstaked)
         stake = funds - ramFunds - unstaked
-        stakeNet = round(stake / 2)
-        stakeCpu = stake - stakeNet
+        stakeNet = round(0.3 * stake)
+        stakeCpu = round(0.3 * stake)
+        stakeVote = stake - stakeNet - stakeCpu
         print('%s: total funds=%s, ram=%s, net=%s, cpu=%s, unstaked=%s' % (a['name'], intToCurrency(a['funds']), intToCurrency(ramFunds), intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(unstaked)))
-        assert(funds == ramFunds + stakeNet + stakeCpu + unstaked)
-        retry(args.cleos + 'system newaccount --transfer eosio %s %s --stake-net "%s" --stake-cpu "%s" --buy-ram "%s"   ' %
-            (a['name'], a['pub'], intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(ramFunds)))
+        assert(funds == ramFunds + stakeNet + stakeCpu + stakeVote + unstaked)
+        retry(args.cleos + 'system newaccount --transfer eosio %s %s --stake-net "%s" --stake-cpu "%s" --stake-vote "%s" --buy-ram "%s"   ' %
+            (a['name'], a['pub'], intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(stakeVote), intToCurrency(ramFunds)))
         if unstaked:
             retry(args.cleos + 'transfer eosio %s "%s"' % (a['name'], intToCurrency(unstaked)))
 
@@ -327,7 +329,7 @@ def stepVote():
     vote(0, 0 + args.num_voters)
     sleep(1)
     listProducers()
-    sleep(5)
+    sleep(1)
 def stepProxyVotes():
     proxyVotes(0, 0 + args.num_voters)
 def stepResign():
