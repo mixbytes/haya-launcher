@@ -127,8 +127,8 @@ def startNode(nodeIndex, account):
         '    --plugin eosio::http_plugin'
         '    --plugin eosio::chain_api_plugin'
         '    --plugin eosio::producer_plugin'
-        '    --plugin eosio::net_api_plugin'
-        '    --plugin eosio::randpa_plugin ' +
+        '    --plugin eosio::net_api_plugin' +
+        # '    --plugin eosio::randpa_plugin ' +
         otherOpts)
     errFile = dir + 'stderr'
     if not args.dry_run:
@@ -157,7 +157,7 @@ def allocateFunds(b, e):
         funds = round(factor * dist[i - b] * 10000)
         if i >= firstProducer and i < firstProducer + numProducers:
             funds = max(funds, round(args.min_producer_funds * 10000))
-        funds = 7_000_000 * 10000
+        funds = 15_000_000 * 10000
         total += funds
         accounts[i]['funds'] = funds
     return total
@@ -175,11 +175,10 @@ def createStakedAccounts(b, e):
         if funds < ramFunds:
             print('skipping %s: not enough funds to cover ram' % a['name'])
             continue
-        minStake = min(funds - ramFunds, configuredMinStake)
-        unstaked = min(funds - ramFunds - minStake, maxUnstaked)
+        unstaked = 10_000_000 * 10000
         stake = funds - ramFunds - unstaked
-        stakeNet = round(0.3 * stake)
-        stakeCpu = round(0.3 * stake)
+        stakeNet = 10 * 10000
+        stakeCpu = 10 * 10000
         stakeVote = stake - stakeNet - stakeCpu
         print('%s: total funds=%s, ram=%s, net=%s, cpu=%s, unstaked=%s' % (a['name'], intToCurrency(a['funds']), intToCurrency(ramFunds), intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(unstaked)))
         assert(funds == ramFunds + stakeNet + stakeCpu + stakeVote + unstaked)
@@ -197,6 +196,8 @@ def listProducers():
     run(args.cleos + 'system listproducers')
 
 def vote(b, e):
+    if e > len(accounts):
+        e = len(accounts)
     for i in range(b, e):
         voter = accounts[i]['name']
         k = args.num_producers_vote
@@ -291,7 +292,7 @@ def produceNewAccounts():
                 f.write('        {"name":"%s", "pvt":"%s", "pub":"%s"},\n' % (name, r[1], r[2]))
 
 def stepKillAll():
-    run('killall keosd haya-node || true')
+    run('killall haya-wallet haya-node || true')
     sleep(1.5)
 def stepStartWallet():
     startWallet()
@@ -305,7 +306,7 @@ def stepInstallSystemContracts():
 def stepCreateTokens():
     sleep(1)
     run(args.cleos + 'push action eosio.token create \'["eosio", "10000000000.0000 %s"]\' -p eosio.token' % (args.symbol))
-    totalAllocation = allocateFunds(0, len(accounts))
+    totalAllocation = allocateFunds(0, len(accounts)) + 1_000 * 10_000
     run(args.cleos + 'push action eosio.token issue \'["eosio", "%s", "memo"]\' -p eosio' % intToCurrency(totalAllocation))
     sleep(1)
 def stepSetSystemContract():
@@ -377,15 +378,15 @@ parser.add_argument('--nodes-dir', metavar='', help="Path to nodes directory", d
 parser.add_argument('--genesis', metavar='', help="Path to genesis.json", default="./genesis.json")
 parser.add_argument('--wallet-dir', metavar='', help="Path to wallet directory", default='./wallet/')
 parser.add_argument('--symbol', metavar='', help="The eosio.system symbol", default='SYS')
-parser.add_argument('--user-limit', metavar='', help="Max number of users. (0 = no limit)", type=int, default=1)
+parser.add_argument('--user-limit', metavar='', help="Max number of users. (0 = no limit)", type=int, default=0)
 parser.add_argument('--max-user-keys', metavar='', help="Maximum user keys to import into wallet", type=int, default=10)
 parser.add_argument('--ram-funds', metavar='', help="How much funds for each user to spend on ram", type=float, default=0.1)
 parser.add_argument('--min-stake', metavar='', help="Minimum stake before allocating unstaked funds", type=float, default=0.9)
 parser.add_argument('--max-unstaked', metavar='', help="Maximum unstaked funds", type=float, default=10)
-parser.add_argument('--producer-limit', metavar='', help="Maximum number of producers. (0 = no limit)", type=int, default=0)
+parser.add_argument('--producer-limit', metavar='', help="Maximum number of producers. (0 = no limit)", type=int, default=21)
 parser.add_argument('--min-producer-funds', metavar='', help="Minimum producer funds", type=float, default=1000.0000)
 parser.add_argument('--num-producers-vote', metavar='', help="Number of producers for which each user votes", type=int, default=20)
-parser.add_argument('--num-voters', metavar='', help="Number of voters", type=int, default=3)
+parser.add_argument('--num-voters', metavar='', help="Number of voters", type=int, default=99)
 parser.add_argument('--num-senders', metavar='', help="Number of users to transfer funds randomly", type=int, default=10)
 parser.add_argument('--producer-sync-delay', metavar='', help="Time (s) to sleep to allow producers to sync", type=int, default=5)
 parser.add_argument('-a', '--all', action='store_true', help="Do everything marked with (*)")
@@ -413,6 +414,9 @@ with open('accounts.json') as f:
     a = json.load(f)
     if args.user_limit:
         del a['users'][args.user_limit:]
+    else:
+        a['users'] = []
+
     if args.producer_limit:
         del a['producers'][args.producer_limit:]
     firstProducer = len(a['users'])
