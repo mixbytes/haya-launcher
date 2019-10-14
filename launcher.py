@@ -126,7 +126,7 @@ def startNode(nodeIndex, account):
         '    -l logging.json ' +
         '    --plugin eosio::http_plugin'
         '    --plugin eosio::chain_api_plugin'
-        '    --plugin eosio::producer_plugin'
+        '    --plugin eosio::producer_api_plugin'
         '    --plugin eosio::net_api_plugin' +
         # '    --plugin eosio::randpa_plugin ' +
         otherOpts)
