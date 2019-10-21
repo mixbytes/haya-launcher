@@ -11,7 +11,6 @@ import sys
 import time
 
 args = None
-logFile = None
 
 unlockTimeout = 999999999
 fastUnstakeSystem = './fast.refund/eosio.system/eosio.system.wasm'
@@ -34,7 +33,6 @@ def jsonArg(a):
 
 def run(cmd):
     print('bios-boot-tutorial.py:', cmd)
-    logFile.write(cmd + '\n')
     if args.dry_run:
         return
     if subprocess.call(cmd, shell=True):
@@ -44,7 +42,6 @@ def run(cmd):
 def retry(cmd):
     while True:
         print('bios-boot-tutorial.py:', cmd)
-        logFile.write(cmd + '\n')
         if args.dry_run:
             return
         if subprocess.call(cmd, shell=True):
@@ -55,14 +52,12 @@ def retry(cmd):
 
 def background(cmd):
     print('bios-boot-tutorial.py:', cmd)
-    logFile.write(cmd + '\n')
     if args.dry_run:
         return
     return subprocess.Popen(cmd, shell=True)
 
 def getOutput(cmd):
     print('bios-boot-tutorial.py:', cmd)
-    logFile.write(cmd + '\n')
     if args.dry_run:
         return
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -379,7 +374,6 @@ parser.add_argument('--contracts-dir', metavar='', help="Path to contracts direc
 parser.add_argument('--nodes-dir', metavar='', help="Path to nodes directory", default='./nodes/')
 parser.add_argument('--genesis', metavar='', help="Path to genesis.json", default="./genesis.json")
 parser.add_argument('--wallet-dir', metavar='', help="Path to wallet directory", default='./wallet/')
-parser.add_argument('--log-path', metavar='', help="Path to log file", default='./output.log')
 parser.add_argument('--symbol', metavar='', help="The eosio.system symbol", default='SYS')
 parser.add_argument('--user-limit', metavar='', help="Max number of users. (0 = no limit)", type=int, default=1)
 parser.add_argument('--max-user-keys', metavar='', help="Maximum user keys to import into wallet", type=int, default=10)
@@ -412,14 +406,6 @@ if args.dry_run:
     print('DRY RUN mode')
 
 args.cleos += ' --wallet-url http://127.0.0.1:6666 --url http://127.0.0.1:%d ' % args.http_port
-
-if not args.dry_run:
-    logFile = open(args.log_path, 'a')
-else:
-    logFile = open('/dev/null', 'a')
-
-
-logFile.write('\n\n' + '*' * 80 + '\n\n\n')
 
 with open('accounts.json') as f:
     a = json.load(f)
