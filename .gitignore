@@ -1,0 +1,6 @@
+# general
+*.py[co]
+*.sw[op]
+/tags
+
+# project-specific

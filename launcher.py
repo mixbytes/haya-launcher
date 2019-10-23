@@ -11,7 +11,6 @@ import sys
 import time
 
 args = None
-logFile = None
 
 unlockTimeout = 999999999
 fastUnstakeSystem = './fast.refund/eosio.system/eosio.system.wasm'
@@ -32,36 +31,40 @@ systemAccounts = [
 def jsonArg(a):
     return " '" + json.dumps(a) + "' "
 
-def run(args):
-    print('bios-boot-tutorial.py:', args)
-    logFile.write(args + '\n')
-    if subprocess.call(args, shell=True):
+def run(cmd):
+    print('bios-boot-tutorial.py:', cmd)
+    if args.dry_run:
+        return
+    if subprocess.call(cmd, shell=True):
         print('bios-boot-tutorial.py: exiting because of error')
         sys.exit(1)
 
-def retry(args):
+def retry(cmd):
     while True:
-        print('bios-boot-tutorial.py:', args)
-        logFile.write(args + '\n')
-        if subprocess.call(args, shell=True):
+        print('bios-boot-tutorial.py:', cmd)
+        if args.dry_run:
+            return
+        if subprocess.call(cmd, shell=True):
             sleep(2)
             print('*** Retry')
         else:
             break
 
-def background(args):
-    print('bios-boot-tutorial.py:', args)
-    logFile.write(args + '\n')
-    return subprocess.Popen(args, shell=True)
+def background(cmd):
+    print('bios-boot-tutorial.py:', cmd)
+    if args.dry_run:
+        return
+    return subprocess.Popen(cmd, shell=True)
 
-def getOutput(args):
-    print('bios-boot-tutorial.py:', args)
-    logFile.write(args + '\n')
-    proc = subprocess.Popen(args, shell=True, stdout=subprocess.PIPE)
+def getOutput(cmd):
+    print('bios-boot-tutorial.py:', cmd)
+    if args.dry_run:
+        return
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     return proc.communicate()[0].decode('utf-8')
 
-def getJsonOutput(args):
-    return json.loads(getOutput(args))
+def getJsonOutput(cmd):
+    return json.loads(getOutput(cmd))
 
 def sleep(t):
     print('sleep', t, '...')
@@ -127,8 +130,10 @@ def startNode(nodeIndex, account):
         '    --plugin eosio::net_api_plugin'
         '    --plugin eosio::randpa_plugin ' +
         otherOpts)
-    with open(dir + 'stderr', mode='w') as f:
-        f.write(cmd + '\n\n')
+    errFile = dir + 'stderr'
+    if not args.dry_run:
+        with open(err_file, mode='w') as f:
+            f.write(cmd + '\n\n')
     background(cmd + '    2>>' + dir + 'stderr')
 
 def startProducers(b, e):
@@ -280,7 +285,8 @@ def produceNewAccounts():
             for j in range(7, -1, -1):
                 name += chr(ord('a') + ((i >> (j * 4)) & 15))
             print(i, name)
-            f.write('        {"name":"%s", "pvt":"%s", "pub":"%s"},\n' % (name, r[1], r[2]))
+            if not args.dry_run:
+                f.write('        {"name":"%s", "pvt":"%s", "pub":"%s"},\n' % (name, r[1], r[2]))
 
 def stepKillAll():
     run('killall keosd haya-node || true')
@@ -368,7 +374,6 @@ parser.add_argument('--contracts-dir', metavar='', help="Path to contracts direc
 parser.add_argument('--nodes-dir', metavar='', help="Path to nodes directory", default='./nodes/')
 parser.add_argument('--genesis', metavar='', help="Path to genesis.json", default="./genesis.json")
 parser.add_argument('--wallet-dir', metavar='', help="Path to wallet directory", default='./wallet/')
-parser.add_argument('--log-path', metavar='', help="Path to log file", default='./output.log')
 parser.add_argument('--symbol', metavar='', help="The eosio.system symbol", default='SYS')
 parser.add_argument('--user-limit', metavar='', help="Max number of users. (0 = no limit)", type=int, default=1)
 parser.add_argument('--max-user-keys', metavar='', help="Maximum user keys to import into wallet", type=int, default=10)
@@ -384,6 +389,8 @@ parser.add_argument('--producer-sync-delay', metavar='', help="Time (s) to sleep
 parser.add_argument('-a', '--all', action='store_true', help="Do everything marked with (*)")
 parser.add_argument('-H', '--http-port', type=int, default=8000, metavar='', help='HTTP port for cleos')
 
+parser.add_argument('-n', '--dry-run', action='store_true', help='Only print commands, do not execute them')
+
 for (flag, command, function, inAll, help) in commands:
     prefix = ''
     if inAll: prefix += '*'
@@ -395,11 +402,10 @@ for (flag, command, function, inAll, help) in commands:
 
 args = parser.parse_args()
 
+if args.dry_run:
+    print('DRY RUN mode')
+
 args.cleos += ' --wallet-url http://127.0.0.1:6666 --url http://127.0.0.1:%d ' % args.http_port
-
-logFile = open(args.log_path, 'a')
-
-logFile.write('\n\n' + '*' * 80 + '\n\n\n')
 
 with open('accounts.json') as f:
     a = json.load(f)
