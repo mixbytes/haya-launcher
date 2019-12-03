@@ -292,7 +292,7 @@ def produceNewAccounts():
                 f.write('        {"name":"%s", "pvt":"%s", "pub":"%s"},\n' % (name, r[1], r[2]))
 
 def stepKillAll():
-    run('killall haya-wallet haya-node || true')
+    run('killall daobet-wallet daobet-node || true')
     sleep(1.5)
 def stepStartWallet():
     startWallet()
