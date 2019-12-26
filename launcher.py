@@ -128,9 +128,9 @@ def startNode(nodeIndex, account):
         '    --plugin eosio::chain_api_plugin'
         '    --plugin eosio::producer_api_plugin'
         '    --plugin eosio::net_api_plugin' +
-        # '    --plugin eosio::randpa_plugin ' +
+        '    --plugin eosio::randpa_plugin ' +
         otherOpts)
-    errFile = dir + 'stderr'
+    err_file = dir + 'stderr'
     if not args.dry_run:
         with open(err_file, mode='w') as f:
             f.write(cmd + '\n\n')
@@ -175,17 +175,17 @@ def createStakedAccounts(b, e):
         if funds < ramFunds:
             print('skipping %s: not enough funds to cover ram' % a['name'])
             continue
-        unstaked = 10_000_000 * 10000
-        stake = funds - ramFunds - unstaked
+        liquid = 10 * 10000
+        stake = funds - ramFunds - liquid
         stakeNet = 10 * 10000
         stakeCpu = 10 * 10000
         stakeVote = stake - stakeNet - stakeCpu
-        print('%s: total funds=%s, ram=%s, net=%s, cpu=%s, unstaked=%s' % (a['name'], intToCurrency(a['funds']), intToCurrency(ramFunds), intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(unstaked)))
-        assert(funds == ramFunds + stakeNet + stakeCpu + stakeVote + unstaked)
+        print('%s: total funds=%s, ram=%s, net=%s, cpu=%s, vote=%s' % (a['name'], intToCurrency(a['funds']), intToCurrency(ramFunds), intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(stakeVote)))
+        assert(funds == ramFunds + stakeNet + stakeCpu + stakeVote + liquid)
         retry(args.cleos + 'system newaccount --transfer eosio %s %s --stake-net "%s" --stake-cpu "%s" --stake-vote "%s" --buy-ram "%s"   ' %
             (a['name'], a['pub'], intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(stakeVote), intToCurrency(ramFunds)))
-        if unstaked:
-            retry(args.cleos + 'transfer eosio %s "%s"' % (a['name'], intToCurrency(unstaked)))
+        if liquid:
+            retry(args.cleos + 'transfer eosio %s "%s"' % (a['name'], intToCurrency(liquid)))
 
 def regProducers(b, e):
     for i in range(b, e):
@@ -196,16 +196,14 @@ def listProducers():
     run(args.cleos + 'system listproducers')
 
 def vote(b, e):
+    print('VOTING STEP')
     if e > len(accounts):
         e = len(accounts)
-    for i in range(b, e):
+    for i in range(numProducers):
         voter = accounts[i]['name']
-        k = args.num_producers_vote
-        if k > numProducers:
-            k = numProducers - 1
-        prods = random.sample(range(firstProducer, firstProducer + numProducers), k)
-        prods = ' '.join(map(lambda x: accounts[x]['name'], prods))
-        retry(args.cleos + 'system voteproducer prods ' + voter + ' ' + prods)
+        prod = accounts[firstProducer + i]['name']
+        print('VOTING FOR ', prod)
+        retry(args.cleos + 'system voteproducer prods ' + voter + ' ' + prod)
 
 def claimRewards():
     table = getJsonOutput(args.cleos + 'get table eosio eosio producers -l 100')
