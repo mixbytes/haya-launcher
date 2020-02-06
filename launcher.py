@@ -28,6 +28,8 @@ systemAccounts = [
     'eosio.rex',
 ]
 
+cur_script_dir = os.path.dirname(os.path.abspath(__file__))
+
 def jsonArg(a):
     return " '" + json.dumps(a) + "' "
 
@@ -123,7 +125,7 @@ def startNode(nodeIndex, account):
         '    --enable-stale-production'
         '    --producer-name ' + account['name'] +
         '    --signature-provider ' + account['pub'] + '=KEOSD:http://127.0.0.1:6666/v1/wallet/sign_digest'
-        '    -l logging.json ' +
+        '    -l '+os.path.abspath(args.logging_json_path) +
         '    --plugin eosio::http_plugin'
         '    --plugin eosio::chain_api_plugin'
         '    --plugin eosio::producer_api_plugin'
@@ -375,6 +377,7 @@ parser.add_argument('--contracts-dir', metavar='', help="Path to contracts direc
 parser.add_argument('--nodes-dir', metavar='', help="Path to nodes directory", default='./nodes/')
 parser.add_argument('--genesis', metavar='', help="Path to genesis.json", default="./genesis.json")
 parser.add_argument('--wallet-dir', metavar='', help="Path to wallet directory", default='./wallet/')
+parser.add_argument('--logging-json-path', metavar='', help="Path to logging.json file (used by nodes)", default=(cur_script_dir+'/logging.json'))
 parser.add_argument('--symbol', metavar='', help="The eosio.system symbol", default='SYS')
 parser.add_argument('--user-limit', metavar='', help="Max number of users. (0 = no limit)", type=int, default=0)
 parser.add_argument('--max-user-keys', metavar='', help="Maximum user keys to import into wallet", type=int, default=10)

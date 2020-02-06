@@ -1,6 +1,13 @@
 # general
 *.py[co]
 *.sw[op]
+.DS_Store
+/.idea/
+/.vscode
 /tags
+\#*
+.#*
 
 # project-specific
+/nodes/
+/wallet/
