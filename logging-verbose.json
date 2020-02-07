@@ -27,7 +27,25 @@
   "loggers": [
     {
       "name": "default",
-      "level": "info",
+      "level": "debug",
+      "enabled": true,
+      "additivity": false,
+      "appenders": [
+        "consoleout"
+      ]
+    },
+    {
+      "name": "net_plugin_impl",
+      "level": "off",
+      "enabled": false,
+      "additivity": false,
+      "appenders": [
+        "consoleout"
+      ]
+    },
+    {
+      "name": "randpa_plugin",
+      "level": "debug",
       "enabled": true,
       "additivity": false,
       "appenders": [
