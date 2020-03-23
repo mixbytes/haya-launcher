@@ -4,7 +4,7 @@ node   := 01 # two-digit port number suffix (80xx)
 nnodes := 21 # number of BPs
 
 logging_json := logging.json
-tmp_dirs     := nodes/ wallet/
+tmp_dirs     := nodes[0-9][0-9]* wallet/
 
 export PATH := "$(HOME)/$(project)-build/bin/:$(PATH)"
 

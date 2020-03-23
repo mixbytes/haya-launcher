@@ -6,6 +6,7 @@ import numpy
 import os
 import random
 import re
+import requests
 import subprocess
 import sys
 import time
@@ -110,6 +111,12 @@ def import_keys():
             keys[key] = True
             run(args.cli_bin + 'wallet import --private-key ' + key)
 
+def node_http_port(node_index):
+    return 8000 + node_index
+
+def node_p2p_port(node_index):
+    return 9000 + node_index
+
 def start_node(node_index, account):
     dir = args.nodes_dir + ('%02d-' % node_index) + account['name'] + '/'
     run('rm -rf ' + dir)
@@ -131,8 +138,8 @@ def start_node(node_index, account):
         '    --config-dir ' + os.path.abspath(dir) +
         '    --data-dir ' + os.path.abspath(dir) +
         '    --chain-state-db-size-mb 1024'
-        '    --http-server-address 127.0.0.1:' + str(8000 + node_index) +
-        '    --p2p-listen-endpoint 127.0.0.1:' + str(9000 + node_index) +
+        '    --http-server-address 127.0.0.1:' + str(node_http_port(node_index)) +
+        '    --p2p-listen-endpoint 127.0.0.1:' + str(node_p2p_port(node_index)) +
         '    --max-clients ' + str(MAX_CLIENTS) +
         '    --p2p-max-nodes-per-host ' + str(MAX_CLIENTS) +
         '    --enable-stale-production'
@@ -150,6 +157,25 @@ def start_node(node_index, account):
         with open(err_file, mode='w') as f:
             f.write(cmd + '\n\n')
     background(cmd + '    2>>' + dir + 'stderr')
+    sleep(2)
+    if node_index == 0:
+        activate_protocol(node_index)
+
+def activate_protocol(node_index):
+    print('Activating the PREACTIVATE_FEATURE protocol ...')
+    url = 'http://127.0.0.1:%d/v1/producer/schedule_protocol_feature_activations' % node_http_port(node_index)
+    print('  POST %s' % url)
+    r = requests.post(url,
+        data='{"protocol_features_to_activate": ["0ec7e080177b2c02b278d5088611686b49d739925a92d9bfcacd7fc6b74053bd"]}')
+
+    print('  => %d (%s)' % (r.status_code, r.reason))
+    print('     %s' % (r.text))
+    assert r.ok
+    #~cmd = ('curl --request POST '
+    #~    '--url http://127.0.0.1:%d/v1/producer/schedule_protocol_feature_activations '
+    #~    '-d \'{"protocol_features_to_activate": ["0ec7e080177b2c02b278d5088611686b49d739925a92d9bfcacd7fc6b74053bd"]}\'').format(
+    #~        node_http_port(node_index))
+    #~run(cmd)
 
 
 def start_producers(b, e):
@@ -199,7 +225,7 @@ def create_staked_accounts(b, e):
         print('%s: total funds=%s, ram=%s, net=%s, cpu=%s, vote=%s' %
             (a['name'], int_to_currency(a['funds']), int_to_currency(ram_funds), int_to_currency(stake_net),
             int_to_currency(stake_cpu), int_to_currency(stake_vote)))
-        assert(funds == ram_funds + stake_net + stake_cpu + stake_vote + liquid)
+        assert funds == ram_funds + stake_net + stake_cpu + stake_vote + liquid
         retry(args.cli_bin + 'system newaccount --transfer eosio %s %s --stake-net "%s" --stake-cpu "%s" --stake-vote "%s" --buy-ram "%s"   ' %
             (a['name'], a['pub'], int_to_currency(stake_net), int_to_currency(stake_cpu), int_to_currency(stake_vote), int_to_currency(ram_funds)))
         if liquid:
