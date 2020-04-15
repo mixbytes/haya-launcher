@@ -7,6 +7,7 @@ import os
 import random
 import re
 import requests
+import resource
 import subprocess
 import sys
 import time
@@ -45,6 +46,11 @@ DEFAULT_LOGGING_JSON  = CUR_SCRIPT_DIR + '/logging.json'
 
 def json_arg(a):
     return " '" + json.dumps(a) + "' "
+
+# enable core dumps
+def set_unlimited_core_limit():
+    print('setting core limit to unlimited')
+    resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
 def run(cmd):
     print('bios-boot-tutorial.py:', cmd)
@@ -470,6 +476,8 @@ if __name__ == '__main__':
         print('DRY RUN mode')
 
     args.cli_bin += ' --wallet-url http://127.0.0.1:6666 --url http://127.0.0.1:%d ' % args.http_port
+
+    set_unlimited_core_limit()
 
     with open('accounts.json') as f:
         a = json.load(f)
